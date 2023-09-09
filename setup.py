@@ -25,12 +25,12 @@ except ImportError:
     sys.exit(1)
 
 setup_www_plugin(
-    name='buildbot-react-grid-view',
-    description='Buildbot Grid View plugin (React)',
-    author='Robin Jarry',
-    author_email='robin.jarry@6wind.com',
+    name='buildbot-dne-react-grid-view',
+    description='Buildbot DNE Grid View plugin (React)',
+    # author='Robin Jarry',
+    # author_email='robin.jarry@6wind.com',
     url='http://buildbot.net/',
-    packages=['buildbot_react_grid_view'],
+    packages=['buildbot_dne_react_grid_view'],
     package_data={
         '': [
             'VERSION',
@@ -39,7 +39,7 @@ setup_www_plugin(
     },
     entry_points="""
         [buildbot.www]
-        react_grid_view = buildbot_react_grid_view:ep
+        react_dne_grid_view = buildbot_dne_react_grid_view:ep
     """,
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)'

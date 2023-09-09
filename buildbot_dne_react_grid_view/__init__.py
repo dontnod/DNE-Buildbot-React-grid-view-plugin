@@ -13,7 +13,32 @@
 #
 # Copyright Buildbot Team Members
 
+from dataclasses import dataclass
 from buildbot.www.plugin import Application
 
 # create the interface for the setuptools entry point
-ep = Application(__name__, "Buildbot Grid View plugin")
+ep = Application(__name__, "Buildbot DNE Grid View plugin")
+
+
+# These classes MUST match classes in src/views/GridView/Utils.tsx
+@dataclass
+class DNEView:
+    identifier: str
+    display_group: str
+    display_name: str
+
+@dataclass
+class DNEBranch:
+    identifier: str
+    display_name: str
+    views: list[DNEView]
+
+@dataclass
+class DNEProject:
+    identifier: str
+    display_name: str
+    branches: list[DNEBranch]
+
+@dataclass
+class DNEConfig:
+    projects: list[DNEProject]

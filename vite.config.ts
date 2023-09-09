@@ -3,7 +3,7 @@ import {defineConfig} from "vite";
 import react from "@vitejs/plugin-react";
 import { ModuleFormat } from "rollup";
 
-const outDir = 'buildbot_react_grid_view/static';
+const outDir = 'buildbot_dne_react_grid_view/static';
 
 export default defineConfig({
   plugins: [
@@ -21,7 +21,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: "buildbotGridViewPlugin",
+      name: "buildbotDNEGridViewPlugin",
       formats: ["umd"],
       fileName: "scripts",
     },

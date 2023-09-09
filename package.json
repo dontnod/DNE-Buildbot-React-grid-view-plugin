@@ -1,13 +1,13 @@
 {
-  "name": "buildbot-grid-view",
+  "name": "buildbot-dne-grid-view",
   "private": true,
   "type": "module",
-  "module": "buildbot_react_grid_view/static/scripts.js",
-  "style": "buildbot_react_grid_view/static/styles.css",
+  "module": "buildbot_dne_react_grid_view/static/scripts.js",
+  "style": "buildbot_dne_react_grid_view/static/styles.css",
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "build-dev": "vite build -m development",
+    "build-dev": "vite build -m development --sourcemap inline --minify false",
     "test": "jest",
     "test-watch": "jest --watchAll"
   },
@@ -78,6 +78,8 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^3.1.0",
     "axios": "^0.27.2",
     "axios-mock-adapter": "^1.21.1",

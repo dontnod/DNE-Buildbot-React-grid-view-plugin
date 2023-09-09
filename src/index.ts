@@ -16,4 +16,4 @@
 */
 
 import "buildbot-plugin-support";
-import './views/GridView/GridView';
+import './views/GridView/DNEGridView';

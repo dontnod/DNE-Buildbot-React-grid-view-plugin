@@ -210,6 +210,8 @@ export const DNEGridView = observer(() => {
     }
   }
 
+  let fakeChangeId = -1;
+
   const buildsByChanges = new Map<string | null, {change: Change | null, revision: string | null, builds: Map<number, Build[]>}>();
   for (const builder of builders) {
     const buildrequestsCollection = (buildrequestsQuery as DataMultiCollection<Builder, Buildrequest>).getParentCollectionOrEmpty(builder.builderid.toString());
@@ -228,7 +230,11 @@ export const DNEGridView = observer(() => {
           }
         }
 
-        const changeid = change?.revision ?? revision;
+        let changeid = change?.revision ?? revision;
+        if (changeid === null) {
+          changeid = fakeChangeId.toString();
+          fakeChangeId -= 1;
+        }
 
         if (!buildsByChanges.has(changeid)) {
           buildsByChanges.set(changeid, {change: change, revision, builds: new Map<number, Build[]>()});
@@ -238,8 +244,17 @@ export const DNEGridView = observer(() => {
       }
     }
   }
+  const buildsAndChanges = Array.from(buildsByChanges.values());
+  buildsAndChanges.sort((left, right) => {
+    if (left.change !== null && right.change !== null) {
+      return right.change.when_timestamp - left.change.when_timestamp;
+    }
+    const leftMin = Math.min(...Array.from(left.builds.values()).flat().map((b: Build) => b.started_at));
+    const rightMin = Math.min(...Array.from(right.builds.values()).flat().map((b: Build) => b.started_at));
+    return rightMin - leftMin;
+  });
 
-  const bodyIntermediate = Array.from(buildsByChanges.values()).map(({change, revision, builds}) => {
+  const bodyIntermediate = buildsAndChanges.map(({change, revision, builds}) => {
     let changeUI;
     if (change) {
       changeUI = (

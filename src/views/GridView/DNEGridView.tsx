@@ -106,18 +106,16 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
       });
   });
 
-  let buildrequestsCompleted = false;
-  if (builderIds.length > 0 && buildrequestsQuery.isResolved()) {
-    buildrequestsCompleted = (buildrequestsQuery as DataMultiCollection<Builder, Buildrequest>).getAll().reduce((rv: boolean, br: Buildrequest) => rv && br.complete, true);
-  }
   const buildsQuery = useDataApiDynamicQuery(
-    [buildrequestsCompleted],
+    [buildrequestsQuery.isResolved()],
     () => {
       return buildrequestsQuery.getRelated((br: Buildrequest) => br.getBuilds({query: {property: ["got_revision"]}}));
     }
   );
 
-  const changesQuery = useDataApiQuery(() => {
+  const changesQuery = useDataApiDynamicQuery(
+    [buildsQuery.isResolved()],
+    () => {
     return buildsQuery.getRelated((b: Build) => b.getChanges({query: {limit: 1, order: '-changeid'}}));
   });
 

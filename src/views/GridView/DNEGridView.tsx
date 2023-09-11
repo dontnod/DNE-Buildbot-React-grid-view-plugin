@@ -258,7 +258,7 @@ export const DNEGridView = observer(() => {
     let changeUI;
     if (change) {
       changeUI = (
-        <ChangeDetails change={change} compact={true}
+        <ChangeDetails change={change} compact={false}
           showDetails={changeIsExpandedByChangeId.get(change.changeid) ?? false}
           setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
         />

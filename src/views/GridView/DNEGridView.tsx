@@ -263,7 +263,7 @@ export const DNEGridView = observer(() => {
     let changeUI;
     if (change) {
       changeUI = (
-        <ChangeDetails change={change} compact={false}
+        <ChangeDetails change={change} compact={true}
           showDetails={changeIsExpandedByChangeId.get(change.changeid) ?? false}
           setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
         />
@@ -300,7 +300,7 @@ export const DNEGridView = observer(() => {
       <table className="table table-condensed table-striped table-hover">
         <thead>
           <tr>
-            <th>Change</th>
+            <th style={{width: 200}}>Change</th>
             {builders.map(builder => {
               const watiningRequests = buildrequestsQuery.getParentCollectionOrEmpty(builder.id)?.array.length;
               const waitingRequestsUI = watiningRequests > 0 ? <div>{watiningRequests} waiting</div> : "";

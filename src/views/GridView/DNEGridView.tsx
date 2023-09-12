@@ -81,6 +81,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     .filter((b: Builder) => b.tags.indexOf(viewTag) >= 0);
 
   const builderIds = observable(builders.map((b: Builder) => b.id));
+
   const buildrequestsQuery = useDataApiDynamicQuery(builderIds, () => {
     if (builderIds.length <= 0) {
       const resolvedDataCollection = new DataCollection<Buildrequest>();
@@ -92,24 +93,37 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
       builderIds,
       (builder: Builder) => {
         return builder.getBuildrequests({query: {
-          limit: buildFetchLimit,
-          order: '-buildrequestid'
+          order: '-buildrequestid',
+          claimed: false,
         }})
       });
   });
 
-  const buildsQuery = useDataApiDynamicQuery(
-    [buildrequestsQuery.isResolved()],
-    () => {
-      return buildrequestsQuery.getRelated((br: Buildrequest) => br.getBuilds({query: {property: ["got_revision"]}}));
+  const buildsQuery = useDataApiDynamicQuery(builderIds, () => {
+    if (builderIds.length <= 0) {
+      const resolvedDataCollection = new DataCollection<Build>();
+      resolvedDataCollection.resolved = buildersQuery.isResolved();
+      return resolvedDataCollection;
     }
-  );
+
+    return buildersQuery.getRelatedOfFiltered(
+      builderIds,
+      (builder: Builder) => {
+        return builder.getBuilds({query: {
+          limit: buildFetchLimit,
+          order: '-buildid',
+          property: ["got_revision"],
+        }})
+      });
+  });
+  const buildsQueryState = buildsQuery.isResolved() ? buildsQuery.getAll().map((b: Build) => `${b.buildid}|${b.complete}`) : [];
 
   const changesQuery = useDataApiDynamicQuery(
-    [buildsQuery.isResolved()],
+    buildsQueryState,
     () => {
     return buildsQuery.getRelated((b: Build) => b.getChanges({query: {limit: 1, order: '-changeid'}}));
   });
+  const changesQueryState = changesQuery.getAll().map((c: Change) => c.id);
 
   const changesRevisions = new Set<string>();
   if (changesQuery.isResolved()) {
@@ -122,7 +136,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 
   const isReadyForChangesByRevision = buildsQuery.isResolved() && changesQuery.isResolved();
   const changesByRevisionQuery = useDataApiDynamicQuery(
-    [isReadyForChangesByRevision],
+    buildsQueryState.concat(changesQueryState),
       () => {
       return buildsQuery.getRelated((build: Build) => {
         const revision = getGotRevisionFromBuild(build);
@@ -204,36 +218,35 @@ export const DNEGridView = observer(() => {
 
   let fakeChangeId = -1;
 
-  const buildsByChanges = new Map<string | null, {change: Change | null, revision: string | null, builds: Map<number, Build[]>}>();
+  const buildsByChanges = new Map<string | null, {change: Change | null, revision: string | null, builds: Map<string, Build[]>}>();
   for (const builder of builders) {
-    const buildrequestsCollection = (buildrequestsQuery as DataMultiCollection<Builder, Buildrequest>).getParentCollectionOrEmpty(builder.builderid.toString());
-    for (const buildrequest of buildrequestsCollection.array) {
-      const buildsCollection = buildsQuery.getParentCollectionOrEmpty(buildrequest.buildrequestid.toString())
-      for (const build of buildsCollection.array) {
-        const revision = getGotRevisionFromBuild(build);
-
-        let change = changesQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
-        if (!change) {
-          // Did we do a request for this build?
-          change = changesByRevisionQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
-          // Try to find change from got_revision in changes got from other builders
-          if (!change && revision) {
-            change = changeByRevision.get(revision) ?? null;
-          }
-        }
-
-        let changeid = change?.revision ?? revision;
-        if (changeid === null) {
-          changeid = fakeChangeId.toString();
-          fakeChangeId -= 1;
-        }
-
-        if (!buildsByChanges.has(changeid)) {
-          buildsByChanges.set(changeid, {change: change, revision, builds: new Map<number, Build[]>()});
-        }
-
-        pushIntoMapOfArrays(buildsByChanges.get(changeid)!.builds, builder.builderid, build);
+    const buildsCollection = (buildsQuery as DataMultiCollection<Builder, Build>).getParentCollectionOrEmpty(builder.id);
+    for (const build of buildsCollection.array) {
+      const revision = getGotRevisionFromBuild(build);
+      let change: Change | null = null;
+      if (revision) {
+        change = changeByRevision.get(revision) ?? null;
       }
+
+      if (change === null) {
+        change = changesQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
+      }
+      if (change === null) {
+        // Did we do a request for this build?
+        change = changesByRevisionQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
+      }
+
+      let changeid = change?.revision ?? revision;
+      if (changeid === null) {
+        changeid = fakeChangeId.toString();
+        fakeChangeId -= 1;
+      }
+
+      if (!buildsByChanges.has(changeid)) {
+        buildsByChanges.set(changeid, {change: change, revision, builds: new Map<string, Build[]>()});
+      }
+
+      pushIntoMapOfArrays(buildsByChanges.get(changeid)!.builds, builder.id, build);
     }
   }
   const buildsAndChanges = Array.from(buildsByChanges.values());
@@ -265,7 +278,7 @@ export const DNEGridView = observer(() => {
     return {
       change: changeUI,
       buildersUI: builders.map((b: Builder) => {
-        return <td>{builds.get(b.builderid)?.map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)}</td>
+        return <td>{builds.get(b.id)?.map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)}</td>
       })
     };
   });
@@ -288,7 +301,11 @@ export const DNEGridView = observer(() => {
         <thead>
           <tr>
             <th>Change</th>
-            {builders.map(builder => <th><Link to={`/builders/${builder.builderid}`}>{builder.name}</Link></th>)}
+            {builders.map(builder => {
+              const watiningRequests = buildrequestsQuery.getParentCollectionOrEmpty(builder.id)?.array.length;
+              const waitingRequestsUI = watiningRequests > 0 ? <div>{watiningRequests} waiting</div> : "";
+              return <th><Link to={`/builders/${builder.builderid}`}>{builder.name}</Link>{waitingRequestsUI}</th>;
+            })}
           </tr>
         </thead>
         <tbody>

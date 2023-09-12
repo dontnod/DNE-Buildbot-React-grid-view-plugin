@@ -257,7 +257,7 @@ export const DNEGridView = observer(() => {
     const leftMin = Math.min(...Array.from(left.builds.values()).flat().map((b: Build) => b.started_at));
     const rightMin = Math.min(...Array.from(right.builds.values()).flat().map((b: Build) => b.started_at));
     return rightMin - leftMin;
-  });
+  }).splice(buildFetchLimit);
 
   const bodyIntermediate = buildsAndChanges.map(({change, revision, builds}) => {
     let changeUI;
@@ -340,7 +340,7 @@ buildbotSetupPlugin((reg: RegistrationCallbacks) => {
         type: 'integer',
         name: 'buildFetchLimit',
         caption: 'Maximum number of builds to retrieve per builder',
-        defaultValue: 5
+        defaultValue: 20,
       }
     ]
   });

@@ -88,17 +88,9 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
       return resolvedDataCollection;
     }
 
-    // NOTE(TDS): Weirdly, getRelatedOfFiltered doesn't seem to work...
-    // NOTE(TDS): Fixed in https://github.com/buildbot/buildbot/pull/7099
-    return buildersQuery.getRelated(
+    return buildersQuery.getRelatedOfFiltered(
+      builderIds,
       (builder: Builder) => {
-        // NOTE(TDS): There must be a better way...
-        if (builderIds.indexOf(builder.id) < 0) {
-          const resolvedDataCollection = new DataCollection<Buildrequest>();
-          resolvedDataCollection.resolved = true;
-          return resolvedDataCollection;
-        }
-
         return builder.getBuildrequests({query: {
           limit: buildFetchLimit,
           order: '-buildrequestid'

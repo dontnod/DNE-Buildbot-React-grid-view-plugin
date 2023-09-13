@@ -6,9 +6,7 @@ import {Form} from "react-bootstrap";
 import {
   Builder,
   Build,
-  Buildrequest,
   Change,
-  DataCollection,
   useDataAccessor,
   useDataApiQuery,
   useDataApiDynamicQuery,
@@ -23,6 +21,7 @@ import {
 import {buildbotGetSettings, buildbotSetupPlugin, RegistrationCallbacks} from "buildbot-plugin-support";
 import {DNEViewSelectManager} from "./Utils";
 import {getConfig, DNEConfig, DNEView} from "./Config";
+import {getRelatedOfFilteredDataMultiCollection} from "./DataMultiCollectionUtils";
 
 function getViewSelectForm(config: DNEConfig) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -84,10 +83,9 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 
   const buildrequestsQuery = useDataApiDynamicQuery(builderIds, () => {
     if (builderIds.length <= 0) {
-      const resolvedDataCollection = new DataCollection<Buildrequest>();
-      resolvedDataCollection.resolved = buildersQuery.isResolved();
-      return resolvedDataCollection;
+      return null;
     }
+    console.log('Run buildrequestsQuery');
 
     return buildersQuery.getRelatedOfFiltered(
       builderIds,
@@ -101,10 +99,9 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 
   const buildsQuery = useDataApiDynamicQuery(builderIds, () => {
     if (builderIds.length <= 0) {
-      const resolvedDataCollection = new DataCollection<Build>();
-      resolvedDataCollection.resolved = buildersQuery.isResolved();
-      return resolvedDataCollection;
+      return null;
     }
+    console.log('Run buildsQuery');
 
     return buildersQuery.getRelatedOfFiltered(
       builderIds,
@@ -116,55 +113,80 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
         }})
       });
   });
-  const buildsQueryState = buildsQuery.isResolved() ? buildsQuery.getAll().map((b: Build) => `${b.buildid}|${b.complete}`) : [];
+  const buildsQueryIsResolved = buildsQuery?.isResolved() ?? false;
+  const buildsQueryState = buildsQueryIsResolved ? buildsQuery.getAll().map((b: Build) => `${b.buildid}|${b.complete}`) : [];
 
   const changesQuery = useDataApiDynamicQuery(
     buildsQueryState,
     () => {
-    return buildsQuery.getRelated((b: Build) => b.getChanges({query: {limit: 1, order: '-changeid'}}));
-  });
-  const changesQueryState = changesQuery.getAll().map((c: Change) => c.id);
+      if (!buildsQueryIsResolved) {
+        return null;
+      }
+      console.log('Run changesQuery');
+      return getRelatedOfFilteredDataMultiCollection(
+        buildsQuery,
+        // Will get revision from lighter method /api/v2/changes?revision={rev}
+        buildsQuery.getAll().filter((b: Build) => getGotRevisionFromBuild(b) === null).map((b: Build) => b.id),
+        (b: Build) => {
+          return b.getChanges({query: {limit: 1, order: '-changeid'}})
+        }
+      );
+    }
+  );
 
   const changesRevisions = new Set<string>();
-  if (changesQuery.isResolved()) {
+  if (changesQuery?.isResolved() ?? false) {
     for (const change of changesQuery.getAll()) {
-      if (change.revision) {
+      if (change.revision !== null) {
         changesRevisions.add(change.revision);
       }
     }
   }
 
-  const isReadyForChangesByRevision = buildsQuery.isResolved() && changesQuery.isResolved();
+  const changesByRevisionQueryDependencies = (buildsQuery?.isResolved() ?? false) && (changesQuery?.isResolved() ?? false)
   const changesByRevisionQuery = useDataApiDynamicQuery(
-    buildsQueryState.concat(changesQueryState),
+    [changesByRevisionQueryDependencies],
       () => {
-      return buildsQuery.getRelated((build: Build) => {
-        const revision = getGotRevisionFromBuild(build);
-        const changesFromChangesQuery = changesQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
-        const alreadyHasChange = revision ? changesRevisions.has(revision) : false;
-        if (
-          revision !== null &&
-          // did we not get the Build changes?
-          changesFromChangesQuery === null &&
-          // did another build got the change for this revision?
-          !alreadyHasChange
-        ) {
-          return Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: revision.toString()}});
+        if (!changesByRevisionQueryDependencies) {
+          return null;
         }
+        console.log('Run changesByRevisionQuery');
 
-        const resolvedDataCollection = new DataCollection<Change>();
-        resolvedDataCollection.resolved = isReadyForChangesByRevision;
-        return resolvedDataCollection;
-      });
-    }
-  );
+        const filteredBuilds = buildsQuery.getAll().filter((build: Build) => {
+          if (changesQuery.getNthOfParentOrNull(build.buildid.toString(), 0) !== null) {
+            // already got change for this build
+            return false;
+          }
+          const gotRevision = getGotRevisionFromBuild(build);
+          if (gotRevision === null) {
+            // No rev info for this build
+            return false;
+          }
+          if (changesRevisions.has(gotRevision)) {
+            // Already got the change for this revision through another call
+            return false;
+          }
 
-  const queriesResolved =
-    buildersQuery.isResolved() &&
-    buildrequestsQuery.isResolved() &&
-    buildsQuery.isResolved() &&
-    changesQuery.isResolved() &&
-    changesByRevisionQuery.isResolved();
+          // we'll query for this revision, add it to known ones to avoid multiple queries
+          changesRevisions.add(gotRevision);
+          return true;
+        }).map((build: Build) => build.id);
+
+        return getRelatedOfFilteredDataMultiCollection(
+          buildsQuery,
+          filteredBuilds,
+          (build: Build) => Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: getGotRevisionFromBuild(build)!}})
+        );
+      },
+    );
+
+  const queriesResolved = [
+    buildersQuery,
+    buildrequestsQuery,
+    buildsQuery,
+    changesQuery,
+    changesByRevisionQuery,
+  ].every(q => q?.isResolved() ?? false);
 
   return {
     queriesResolved,

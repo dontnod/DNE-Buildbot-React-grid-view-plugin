@@ -22,6 +22,7 @@ import {buildbotGetSettings, buildbotSetupPlugin, RegistrationCallbacks} from "b
 import {DNEViewSelectManager} from "./Utils";
 import {getConfig, DNEConfig, DNEView} from "./Config";
 import {getRelatedOfFilteredDataMultiCollection} from "./DataMultiCollectionUtils";
+import { useState } from "react";
 
 function getViewSelectForm(config: DNEConfig) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -116,45 +117,74 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
   const buildsQueryIsResolved = buildsQuery?.isResolved() ?? false;
   const buildsQueryState = buildsQueryIsResolved ? buildsQuery.getAll().map((b: Build) => `${b.buildid}|${b.complete}`) : [];
 
+  const [buildChangeMap, setBuildChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
+
   const changesQuery = useDataApiDynamicQuery(
     buildsQueryState,
     () => {
       if (!buildsQueryIsResolved) {
         return null;
       }
-      console.log('Run changesQuery');
+      console.log(`Run changesQuery (${buildChangeMap.size} in cache): ${buildsQueryState}`);
       return getRelatedOfFilteredDataMultiCollection(
         buildsQuery,
         // Will get revision from lighter method /api/v2/changes?revision={rev}
-        buildsQuery.getAll().filter((b: Build) => getGotRevisionFromBuild(b) === null).map((b: Build) => b.id),
+        buildsQuery.getAll().filter((b: Build) => {
+          if (buildChangeMap.has(b.id)) {
+            return false;
+          }
+          return getGotRevisionFromBuild(b) === null;
+        }).map((b: Build) => b.id),
         (b: Build) => {
-          return b.getChanges({query: {limit: 1, order: '-changeid'}})
+          return b.getChanges({query: {limit: 1, order: '-changeid'}, subscribe: false});
         }
       );
     }
   );
+  const changesQueryIsResolved = (changesQuery?.isResolved() ?? false) && changesQuery.getAll().length > 0;
 
-  const changesRevisions = new Set<string>();
-  if (changesQuery?.isResolved() ?? false) {
-    for (const change of changesQuery.getAll()) {
+  const [revisionChangeMap, setrevisionChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
+
+  if (changesQueryIsResolved) {
+    const allBuildIds = new Set<string>(buildsQuery.getAll().map((b: Build) => b.id));
+    for (const buildId of allBuildIds) {
+      if (buildChangeMap.has(buildId)) {
+        continue;
+      }
+
+      const change = changesQuery.getNthOfParentOrNull(buildId, 0);
+      if (change !== null) {
+        buildChangeMap.set(buildId, change);
+      }
+    }
+
+    // Remove outdated
+    for (const savedBuildId of buildChangeMap.keys()) {
+      if (!allBuildIds.has(savedBuildId)) {
+        buildChangeMap.delete(savedBuildId);
+      }
+    }
+
+    for (const change of buildChangeMap.values()) {
       if (change.revision !== null) {
-        changesRevisions.add(change.revision);
+        revisionChangeMap.set(change.revision, change);
       }
     }
   }
 
-  const changesByRevisionQueryDependencies = (buildsQuery?.isResolved() ?? false) && (changesQuery?.isResolved() ?? false)
+  const changesByRevisionQueryDependencies = buildsQueryIsResolved && changesQueryIsResolved;
   const changesByRevisionQuery = useDataApiDynamicQuery(
     [changesByRevisionQueryDependencies],
       () => {
         if (!changesByRevisionQueryDependencies) {
           return null;
         }
-        console.log('Run changesByRevisionQuery');
+        console.log(`Run changesByRevisionQuery (${revisionChangeMap.size} in cache): ${changesByRevisionQueryDependencies}`);
+
+        const inQueryRevisions = new Set<string>();
 
         const filteredBuilds = buildsQuery.getAll().filter((build: Build) => {
-          if (changesQuery.getNthOfParentOrNull(build.buildid.toString(), 0) !== null) {
-            // already got change for this build
+          if (buildChangeMap.has(build.id)) {
             return false;
           }
           const gotRevision = getGotRevisionFromBuild(build);
@@ -162,23 +192,55 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
             // No rev info for this build
             return false;
           }
-          if (changesRevisions.has(gotRevision)) {
+          if (revisionChangeMap.has(gotRevision)) {
+            // console.log(`revisionChangeMap has revision ${gotRevision}`);
             // Already got the change for this revision through another call
             return false;
           }
 
           // we'll query for this revision, add it to known ones to avoid multiple queries
-          changesRevisions.add(gotRevision);
+          if (inQueryRevisions.has(gotRevision)) {
+            return false;
+          }
+          inQueryRevisions.add(gotRevision);
           return true;
         }).map((build: Build) => build.id);
 
         return getRelatedOfFilteredDataMultiCollection(
           buildsQuery,
           filteredBuilds,
-          (build: Build) => Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: getGotRevisionFromBuild(build)!}})
+          (build: Build) => {
+            const gotRevision = getGotRevisionFromBuild(build)!;
+            return Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: gotRevision}, subscribe: false});
+          }
         );
       },
     );
+
+  if (changesByRevisionQuery?.isResolved() ?? false) {
+    const buildsRevisions = new Set<string>();
+    for (const build of buildsQuery.getAll()) {
+      const change = changesByRevisionQuery.getNthOfParentOrNull(build.id, 0);
+      const revision = getGotRevisionFromBuild(build);
+      if (change !== null && revision !== null) {
+        buildsRevisions.add(revision);
+        revisionChangeMap.set(revision, change);
+      }
+    }
+
+    if (buildsQuery.isResolved()) {
+      for (const changeRevision of buildChangeMap.keys()) {
+        buildsRevisions.add(changeRevision);
+      }
+
+      // Remove outdated
+      for (const revision of revisionChangeMap.keys()) {
+        if (!buildsRevisions.has(revision)) {
+          revisionChangeMap.delete(revision);
+        }
+      }
+    }
+  }
 
   const queriesResolved = [
     buildersQuery,
@@ -193,8 +255,8 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     builders,
     buildrequestsQuery,
     buildsQuery,
-    changesQuery,
-    changesByRevisionQuery,
+    buildChangeMap,
+    revisionChangeMap,
   };
 }
 
@@ -208,8 +270,8 @@ export const DNEGridView = observer(() => {
     builders,
     buildrequestsQuery,
     buildsQuery,
-    changesQuery,
-    changesByRevisionQuery,
+    buildChangeMap,
+    revisionChangeMap,
   } = getDatas(viewTag, buildFetchLimit);
 
   const changeIsExpandedByChangeId = useLocalObservable(() => new ObservableMap<number, boolean>());
@@ -224,20 +286,6 @@ export const DNEGridView = observer(() => {
     );
   }
 
-  const changeByRevision = new Map<string, Change>();
-  for (const change of changesQuery.getAll()) {
-    const revision = change?.revision;
-    if (revision && !changeByRevision.has(revision)) {
-      changeByRevision.set(revision, change);
-    }
-  }
-  for (const change of changesByRevisionQuery.getAll()) {
-    const revision = change?.revision;
-    if (revision && !changeByRevision.has(revision)) {
-      changeByRevision.set(revision, change);
-    }
-  }
-
   let fakeChangeId = -1;
 
   const buildsByChanges = new Map<string | null, {change: Change | null, revision: string | null, builds: Map<string, Build[]>}>();
@@ -247,15 +295,11 @@ export const DNEGridView = observer(() => {
       const revision = getGotRevisionFromBuild(build);
       let change: Change | null = null;
       if (revision) {
-        change = changeByRevision.get(revision) ?? null;
+        change = revisionChangeMap.get(revision) ?? null;
       }
 
       if (change === null) {
-        change = changesQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
-      }
-      if (change === null) {
-        // Did we do a request for this build?
-        change = changesByRevisionQuery.getNthOfParentOrNull(build.buildid.toString(), 0);
+        change = buildChangeMap.get(build.id) ?? null;
       }
 
       let changeid = change?.revision ?? revision;

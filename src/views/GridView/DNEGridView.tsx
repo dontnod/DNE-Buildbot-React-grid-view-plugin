@@ -11,6 +11,8 @@ import {
   useDataApiQuery,
   useDataApiDynamicQuery,
   DataMultiCollection,
+  DataCollection,
+  BaseClass,
 } from "buildbot-data-js";
 import {
   LoadingIndicator,
@@ -72,6 +74,12 @@ function getGotRevisionFromBuild(build: Build) {
   return null;
 }
 
+function resolvedDataCollection<DataType extends BaseClass>() {
+  const dataCollection = new DataCollection<DataType>();
+  dataCollection.resolved = true;
+  return dataCollection;
+}
+
 function getDatas(viewTag: string, buildFetchLimit: number) {
   const accessor = useDataAccessor([]);
 
@@ -86,7 +94,6 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     if (builderIds.length <= 0) {
       return null;
     }
-    console.log('Run buildrequestsQuery');
 
     return buildersQuery.getRelatedOfFiltered(
       builderIds,
@@ -102,7 +109,6 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     if (builderIds.length <= 0) {
       return null;
     }
-    console.log('Run buildsQuery');
 
     return buildersQuery.getRelatedOfFiltered(
       builderIds,
@@ -125,23 +131,28 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
       if (!buildsQueryIsResolved) {
         return null;
       }
-      console.log(`Run changesQuery (${buildChangeMap.size} in cache): ${buildsQueryState}`);
+
+      const filteredBuilds = buildsQuery.getAll().filter((b: Build) => {
+        if (buildChangeMap.has(b.id)) {
+          return false;
+        }
+        return getGotRevisionFromBuild(b) === null;
+      }).map((b: Build) => b.id);
+      if (filteredBuilds.length <= 0) {
+        return resolvedDataCollection<Change>();
+      }
+
       return getRelatedOfFilteredDataMultiCollection(
         buildsQuery,
         // Will get revision from lighter method /api/v2/changes?revision={rev}
-        buildsQuery.getAll().filter((b: Build) => {
-          if (buildChangeMap.has(b.id)) {
-            return false;
-          }
-          return getGotRevisionFromBuild(b) === null;
-        }).map((b: Build) => b.id),
+        filteredBuilds,
         (b: Build) => {
           return b.getChanges({query: {limit: 1, order: '-changeid'}, subscribe: false});
         }
       );
     }
   );
-  const changesQueryIsResolved = (changesQuery?.isResolved() ?? false) && changesQuery.getAll().length > 0;
+  const changesQueryIsResolved = (changesQuery?.isResolved() ?? false);
 
   const [revisionChangeMap, setrevisionChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
 
@@ -179,7 +190,6 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
         if (!changesByRevisionQueryDependencies) {
           return null;
         }
-        console.log(`Run changesByRevisionQuery (${revisionChangeMap.size} in cache): ${changesByRevisionQueryDependencies}`);
 
         const inQueryRevisions = new Set<string>();
 
@@ -193,7 +203,6 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
             return false;
           }
           if (revisionChangeMap.has(gotRevision)) {
-            // console.log(`revisionChangeMap has revision ${gotRevision}`);
             // Already got the change for this revision through another call
             return false;
           }
@@ -205,6 +214,9 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
           inQueryRevisions.add(gotRevision);
           return true;
         }).map((build: Build) => build.id);
+        if (filteredBuilds.length <= 0) {
+          return resolvedDataCollection<Change>();
+        }
 
         return getRelatedOfFilteredDataMultiCollection(
           buildsQuery,
@@ -288,7 +300,7 @@ export const DNEGridView = observer(() => {
 
   let fakeChangeId = -1;
 
-  const buildsByChanges = new Map<string | null, {change: Change | null, revision: string | null, builds: Map<string, Build[]>}>();
+  const buildsByChanges = new Map<string | null, {change: Change | null, builds: Map<string, Build[]>}>();
   for (const builder of builders) {
     const buildsCollection = (buildsQuery as DataMultiCollection<Builder, Build>).getParentCollectionOrEmpty(builder.id);
     for (const build of buildsCollection.array) {
@@ -309,7 +321,7 @@ export const DNEGridView = observer(() => {
       }
 
       if (!buildsByChanges.has(changeid)) {
-        buildsByChanges.set(changeid, {change: change, revision, builds: new Map<string, Build[]>()});
+        buildsByChanges.set(changeid, {change: change, builds: new Map<string, Build[]>()});
       }
 
       pushIntoMapOfArrays(buildsByChanges.get(changeid)!.builds, builder.id, build);
@@ -325,7 +337,7 @@ export const DNEGridView = observer(() => {
     return rightMin - leftMin;
   }).splice(buildFetchLimit);
 
-  const bodyIntermediate = buildsAndChanges.map(({change, revision, builds}) => {
+  const bodyIntermediate = buildsAndChanges.map(({change, builds}) => {
     let changeUI;
     if (change) {
       changeUI = (
@@ -334,9 +346,6 @@ export const DNEGridView = observer(() => {
           setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
         />
       );
-    }
-    else if (revision) {
-      changeUI = revision;
     }
     else {
       changeUI = "ChangeNotFound";

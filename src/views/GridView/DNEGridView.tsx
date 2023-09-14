@@ -13,6 +13,8 @@ import {
   DataMultiCollection,
   DataCollection,
   BaseClass,
+  IDataAccessor,
+  Buildrequest,
 } from "buildbot-data-js";
 import {
   LoadingIndicator,
@@ -80,6 +82,10 @@ function resolvedDataCollection<DataType extends BaseClass>() {
   return dataCollection;
 }
 
+function resolvedDataMultiCollection<ParentDataType extends BaseClass, DataType extends BaseClass>(accessor: IDataAccessor) {
+  return new DataMultiCollection<ParentDataType, DataType>(accessor, observable([]), null, null, () => resolvedDataCollection<DataType>());
+}
+
 function getDatas(viewTag: string, buildFetchLimit: number) {
   const accessor = useDataAccessor([]);
 
@@ -92,7 +98,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 
   const buildrequestsQuery = useDataApiDynamicQuery(builderIds, () => {
     if (builderIds.length <= 0) {
-      return null;
+      return resolvedDataMultiCollection<Builder, Buildrequest>(accessor);
     }
 
     return buildersQuery.getRelatedOfFiltered(
@@ -107,7 +113,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 
   const buildsQuery = useDataApiDynamicQuery(builderIds, () => {
     if (builderIds.length <= 0) {
-      return null;
+      return resolvedDataMultiCollection<Builder, Build>(accessor);
     }
 
     return buildersQuery.getRelatedOfFiltered(
@@ -129,7 +135,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     buildsQueryState,
     () => {
       if (!buildsQueryIsResolved) {
-        return null;
+        return resolvedDataMultiCollection<Build, Change>(accessor);
       }
 
       const filteredBuilds = buildsQuery.getAll().filter((b: Build) => {
@@ -139,16 +145,18 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
         return getGotRevisionFromBuild(b) === null;
       }).map((b: Build) => b.id);
       if (filteredBuilds.length <= 0) {
-        return resolvedDataCollection<Change>();
+        return resolvedDataMultiCollection<Build, Change>(accessor);
       }
 
-      return getRelatedOfFilteredDataMultiCollection(
-        buildsQuery,
+      return new DataMultiCollection<Build, Change>(
+        buildsQuery.accessor,
+        observable(buildsQuery.getAll()),
+        null,
         // Will get revision from lighter method /api/v2/changes?revision={rev}
-        filteredBuilds,
+        observable(filteredBuilds),
         (b: Build) => {
           return b.getChanges({query: {limit: 1, order: '-changeid'}, subscribe: false});
-        }
+        },
       );
     }
   );
@@ -188,7 +196,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     [changesByRevisionQueryDependencies],
       () => {
         if (!changesByRevisionQueryDependencies) {
-          return null;
+          return resolvedDataMultiCollection<Build, Change>(accessor);
         }
 
         const inQueryRevisions = new Set<string>();
@@ -215,12 +223,12 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
           return true;
         }).map((build: Build) => build.id);
         if (filteredBuilds.length <= 0) {
-          return resolvedDataCollection<Change>();
+          return resolvedDataMultiCollection<Build, Change>(accessor);
         }
 
         return getRelatedOfFilteredDataMultiCollection(
           buildsQuery,
-          filteredBuilds,
+          observable(filteredBuilds),
           (build: Build) => {
             const gotRevision = getGotRevisionFromBuild(build)!;
             return Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: gotRevision}, subscribe: false});

@@ -1,14 +1,18 @@
-import {IObservableArray} from "mobx";
 import {
   BaseClass,
-  BasicDataMultiCollection,
-  DataMultiCollection,
   DataCollection,
+  DataMultiCollection,
 } from "buildbot-data-js";
+import { IObservableArray, observable } from "mobx";
 
-export function getRelatedOfFilteredDataMultiCollection<ChildDataType extends BaseClass, ParentDataType extends BaseClass>(
-  dataMultiCollection: BasicDataMultiCollection<ParentDataType, DataCollection<ParentDataType>>,
+export function getRelatedOfFilteredDataMultiCollection<OriginalParentDataType extends BaseClass, ParentDataType extends BaseClass, ChildDataType extends BaseClass>(
+  dataMultiCollection: DataMultiCollection<OriginalParentDataType, ParentDataType>,
   filteredIds: IObservableArray<string>,
   callback: (child: ParentDataType) => DataCollection<ChildDataType>) {
-  return new DataMultiCollection<ParentDataType, ChildDataType>(dataMultiCollection.accessor, null, dataMultiCollection.byParentId, filteredIds, callback);
+  return new DataMultiCollection<ParentDataType, ChildDataType>(
+    dataMultiCollection.accessor,
+    observable(dataMultiCollection.getAll()),
+    null,
+    filteredIds, callback
+  );
 }

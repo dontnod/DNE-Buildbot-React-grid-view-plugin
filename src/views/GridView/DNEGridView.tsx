@@ -66,8 +66,19 @@ function getViewSelectForm(config: DNEConfig) {
 }
 
 function getGotRevisionFromBuild(build: Build) {
-  if (build.properties !== null && ('got_revision' in build.properties)) {
+  if (build.properties === null) {
+    return null;
+  }
+
+  if ('got_revision' in build.properties) {
     const revision = build.properties['got_revision'][0];
+    if (typeof(revision) === "string") {
+      return revision;
+    }
+  }
+
+  if ('revision' in build.properties) {
+    const revision = build.properties['revision'][0];
     if (typeof(revision) === "string") {
       return revision;
     }
@@ -122,7 +133,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
         return builder.getBuilds({query: {
           limit: buildFetchLimit,
           order: '-buildid',
-          property: ["got_revision"],
+          property: ["got_revision", "revision"],
         }})
       });
   });

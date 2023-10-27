@@ -360,42 +360,32 @@ export const DNEGridView = observer(() => {
     }
   }
 
-  const bodyIntermediate = buildsPerChange.map(({change, builds}) => {
-    let changeUI;
-    if (change) {
-      changeUI = (
-        <DNEGridChange change={change}
-          showDetails={changeIsExpandedByChangeId.get(change.changeid) ?? false}
-          setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
-        />
-      );
-    }
-    else {
-      changeUI = "ChangeNotFound";
-    }
-    return {
-      change: changeUI,
-      buildersUI: builders.map((b: Builder) => {
-        return (
-          <td>
-            {
-              builds
-                .filter((build: Build) => build.builderid === b.builderid)
-                .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)
-            }
-          </td>
-        );
-      })
-    };
-  });
-
-  const body = bodyIntermediate.map(({change, buildersUI}) => {
+  const body = buildsPerChange.map(({change, builds}) => {
     return (
     <tr>
       <td>
-        {change}
+        {
+          change
+          ? <DNEGridChange change={change}
+              showDetails={changeIsExpandedByChangeId.get(change.changeid) ?? false}
+              setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
+            />
+          : "ChangeNotFound"
+        }
       </td>
-      {buildersUI}
+      {
+        builders.map((b: Builder) => {
+          return (
+            <td>
+              {
+                builds
+                  .filter((build: Build) => build.builderid === b.builderid)
+                  .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)
+              }
+            </td>
+          );
+        })
+      }
     </tr>
     );
   });

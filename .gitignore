@@ -1,6 +1,10 @@
-node_modules/
-
-build/
-buildbot_dne_react_grid_view.egg-info/
-__pycache__
-.venv/
+MANIFEST.in
+build
+!base/src/app/builders/build
+dist/
+static/
+coverage/
+VERSION
+node_modules
+npm-debug.log
+libs/

@@ -27,6 +27,8 @@ import {DNEViewSelectManager} from "./Utils";
 import {getConfig, DNEConfig, DNEView} from "./Config";
 import {getRelatedOfFilteredDataMultiCollection} from "./DataMultiCollectionUtils";
 import { useState } from "react";
+import {DNEGridChange} from "../../components/DNEGridChange/DNEGridChange";
+
 
 function getViewSelectForm(config: DNEConfig) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -360,7 +362,7 @@ export const DNEGridView = observer(() => {
     let changeUI;
     if (change) {
       changeUI = (
-        <ChangeDetails change={change} compact={false}
+        <DNEGridChange change={change}
           showDetails={changeIsExpandedByChangeId.get(change.changeid) ?? false}
           setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
         />
@@ -394,7 +396,7 @@ export const DNEGridView = observer(() => {
       <table className="table table-condensed table-striped table-hover">
         <thead>
           <tr>
-            <th style={{width: 200}}>Change</th>
+            <th style={{maxWidth: 200, textAlign: "center"}}>Changes</th>
             {builders.map(builder => {
               const watiningRequests = buildrequestsQuery.getParentCollectionOrEmpty(builder.id)?.array.length;
               const waitingRequestsUI = watiningRequests > 0 ? <div>{watiningRequests} waiting</div> : "";

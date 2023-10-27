@@ -309,14 +309,44 @@ export const DNEGridView = observer(() => {
 
   const changeIsExpandedByChangeId = useLocalObservable(() => new ObservableMap<number, boolean>());
 
-  // FIXME: fa-spin
-  if (!queriesResolved) {
+  const renderGrid = (tableBody: JSX.Element[] | null) => {
+    const canRenderHeader = builders.length > 0 && buildrequestsQuery.isResolved();
     return (
       <div className="bb-grid-container">
         {viewSelectForm}
-        <LoadingIndicator/>
+        {
+          canRenderHeader ?
+          (
+            <table className="table table-condensed table-striped table-hover">
+              <thead>
+                <tr>
+                  <th style={{maxWidth: 200, textAlign: "center"}}>Changes</th>
+                  {
+                    builders.map(builder => {
+                      const waitingRequests = buildrequestsQuery.getParentCollectionOrEmpty(builder.id)?.array.length;
+                      const waitingRequestsUI = waitingRequests > 0 ? <div>{waitingRequests} waiting</div> : "";
+                      return <th><Link to={`/builders/${builder.builderid}`}>{builder.name}</Link>{waitingRequestsUI}</th>;
+                    })
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                {tableBody ?? <></>}
+              </tbody>
+            </table>
+          )
+          : <></>
+        }
+        {
+          !canRenderHeader || tableBody === null ? <LoadingIndicator/> : <></>
+        }
       </div>
     );
+  };
+
+  // FIXME: fa-spin
+  if (!queriesResolved) {
+    return renderGrid(null);
   }
 
   let fakeChangeId = -1;
@@ -390,26 +420,7 @@ export const DNEGridView = observer(() => {
     );
   });
 
-  return (
-    <div className="container grid">
-      {viewSelectForm}
-      <table className="table table-condensed table-striped table-hover">
-        <thead>
-          <tr>
-            <th style={{maxWidth: 200, textAlign: "center"}}>Changes</th>
-            {builders.map(builder => {
-              const watiningRequests = buildrequestsQuery.getParentCollectionOrEmpty(builder.id)?.array.length;
-              const waitingRequestsUI = watiningRequests > 0 ? <div>{watiningRequests} waiting</div> : "";
-              return <th><Link to={`/builders/${builder.builderid}`}>{builder.name}</Link>{waitingRequestsUI}</th>;
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {body}
-        </tbody>
-      </table>
-    </div>
-  );
+  return renderGrid(body);
 });
 
 buildbotSetupPlugin((reg: RegistrationCallbacks) => {

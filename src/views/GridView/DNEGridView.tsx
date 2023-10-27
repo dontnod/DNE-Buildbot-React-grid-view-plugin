@@ -320,45 +320,47 @@ export const DNEGridView = observer(() => {
   }
 
   let fakeChangeId = -1;
+  const changeFromBuild = (build: Build) => {
+    const revision = getGotRevisionFromBuild(build);
+    let change: Change | null = null;
+    if (revision) {
+      change = revisionChangeMap.get(revision) ?? null;
+    }
 
-  const buildsByChanges = new Map<string | null, {change: Change | null, builds: Map<string, Build[]>}>();
-  for (const builder of builders) {
-    const buildsCollection = (buildsQuery as DataMultiCollection<Builder, Build>).getParentCollectionOrEmpty(builder.id);
-    for (const build of buildsCollection.array) {
-      const revision = getGotRevisionFromBuild(build);
-      let change: Change | null = null;
-      if (revision) {
-        change = revisionChangeMap.get(revision) ?? null;
+    if (change === null) {
+      change = buildChangeMap.get(build.id) ?? null;
+    }
+
+    let changeid = change?.revision ?? revision;
+    if (changeid === null) {
+      changeid = fakeChangeId.toString();
+      fakeChangeId -= 1;
+    }
+    return {changeid, change};
+  };
+
+  // Sort Builds by latest first
+  const sortedBuilds = buildsQuery.getAll().sort((left: Build, right: Build) => right.started_at - left.started_at);
+
+  // Pack builds per-common sequential changes
+  const buildsPerChange: {changeid: string, change: Change | null, builds: Build[]}[] = [];
+  for (const build of sortedBuilds) {
+    const {changeid, change} = changeFromBuild(build);
+
+    const lastChange = buildsPerChange.length > 0 ? buildsPerChange[buildsPerChange.length - 1] : null;
+    if (lastChange?.changeid === changeid) {
+      lastChange.builds.push(build);
+    }
+    else {
+      if (buildsPerChange.length >= buildFetchLimit) {
+        // Stop at `buildFetchLimit`, we want only this amount of changes
+        break;
       }
-
-      if (change === null) {
-        change = buildChangeMap.get(build.id) ?? null;
-      }
-
-      let changeid = change?.revision ?? revision;
-      if (changeid === null) {
-        changeid = fakeChangeId.toString();
-        fakeChangeId -= 1;
-      }
-
-      if (!buildsByChanges.has(changeid)) {
-        buildsByChanges.set(changeid, {change: change, builds: new Map<string, Build[]>()});
-      }
-
-      pushIntoMapOfArrays(buildsByChanges.get(changeid)!.builds, builder.id, build);
+      buildsPerChange.push({changeid, change, builds: [build]});
     }
   }
-  const buildsAndChanges = Array.from(buildsByChanges.values());
-  buildsAndChanges.sort((left, right) => {
-    if (left.change !== null && right.change !== null) {
-      return right.change.when_timestamp - left.change.when_timestamp;
-    }
-    const leftMin = Math.min(...Array.from(left.builds.values()).flat().map((b: Build) => b.started_at));
-    const rightMin = Math.min(...Array.from(right.builds.values()).flat().map((b: Build) => b.started_at));
-    return rightMin - leftMin;
-  }).splice(buildFetchLimit);
 
-  const bodyIntermediate = buildsAndChanges.map(({change, builds}) => {
+  const bodyIntermediate = buildsPerChange.map(({change, builds}) => {
     let changeUI;
     if (change) {
       changeUI = (
@@ -374,7 +376,15 @@ export const DNEGridView = observer(() => {
     return {
       change: changeUI,
       buildersUI: builders.map((b: Builder) => {
-        return <td>{builds.get(b.id)?.map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)}</td>
+        return (
+          <td>
+            {
+              builds
+                .filter((build: Build) => build.builderid === b.builderid)
+                .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)
+            }
+          </td>
+        );
       })
     };
   });

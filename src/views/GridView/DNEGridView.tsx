@@ -415,7 +415,7 @@ export const DNEGridView = observer(() => {
               {
                 builds
                   .filter((build: Build) => build.builderid === b.builderid)
-                  .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)
+                  .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} builder={b} build={build}/>)
               }
             </td>
           );

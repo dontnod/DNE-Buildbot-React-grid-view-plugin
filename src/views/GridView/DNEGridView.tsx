@@ -175,7 +175,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
   );
   const changesQueryIsResolved = (changesQuery?.isResolved() ?? false);
 
-  const [revisionChangeMap, setrevisionChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
+  const [revisionChangeMap, setRevisionChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
 
   if (changesQueryIsResolved) {
     const allBuildIds = new Set<string>(buildsQuery.getAll().map((b: Build) => b.id));
@@ -282,6 +282,9 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     changesQuery,
     changesByRevisionQuery,
   ].every(q => q?.isResolved() ?? false);
+
+  setBuildChangeMap(buildChangeMap);
+  setRevisionChangeMap(revisionChangeMap);
 
   return {
     queriesResolved,

@@ -1,3 +1,5 @@
+import './DNEGridView.scss';
+
 import {ObservableMap, observable} from "mobx";
 import {observer, useLocalObservable} from "mobx-react";
 import {Link, useSearchParams} from "react-router-dom";
@@ -18,8 +20,6 @@ import {
 } from "buildbot-data-js";
 import {
   LoadingIndicator,
-  pushIntoMapOfArrays,
-  ChangeDetails,
   BuildLinkWithSummaryTooltip
 } from "buildbot-ui";
 import {buildbotGetSettings, buildbotSetupPlugin, RegistrationCallbacks} from "buildbot-plugin-support";
@@ -317,10 +317,10 @@ export const DNEGridView = observer(() => {
         {
           canRenderHeader ?
           (
-            <table className="table table-condensed table-striped table-hover">
+            <table className="table table-condensed table-striped table-hover bb-dne-grid-table">
               <thead>
                 <tr>
-                  <th style={{maxWidth: 200, textAlign: "center"}}>Changes</th>
+                  <th>Changes</th>
                   {
                     builders.map(builder => {
                       const waitingRequests = buildrequestsQuery.getParentCollectionOrEmpty(builder.id)?.array.length;

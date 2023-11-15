@@ -175,7 +175,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
   );
   const changesQueryIsResolved = (changesQuery?.isResolved() ?? false);
 
-  const [revisionChangeMap, setrevisionChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
+  const [revisionChangeMap, setRevisionChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
 
   if (changesQueryIsResolved) {
     const allBuildIds = new Set<string>(buildsQuery.getAll().map((b: Build) => b.id));
@@ -282,6 +282,9 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
     changesQuery,
     changesByRevisionQuery,
   ].every(q => q?.isResolved() ?? false);
+
+  setBuildChangeMap(buildChangeMap);
+  setRevisionChangeMap(revisionChangeMap);
 
   return {
     queriesResolved,
@@ -415,7 +418,7 @@ export const DNEGridView = observer(() => {
               {
                 builds
                   .filter((build: Build) => build.builderid === b.builderid)
-                  .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} build={build}/>)
+                  .map((build: Build) => <BuildLinkWithSummaryTooltip key={build.buildid} builder={b} build={build}/>)
               }
             </td>
           );

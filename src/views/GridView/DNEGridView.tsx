@@ -317,7 +317,7 @@ export const DNEGridView = observer(() => {
         {
           canRenderHeader ?
           (
-            <table className="table table-condensed table-striped table-hover bb-dne-grid-table">
+            <table className="table table-condensed table-striped table-hover bb-dne-grid-table tableFixHead">
               <thead>
                 <tr>
                   <th>Changes</th>

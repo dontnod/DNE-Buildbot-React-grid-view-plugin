@@ -2,3 +2,19 @@
   text-align: center;
   max-width: max-content;
 }
+
+.bb-dne-grid-table td {
+  border: 0.5px rgb(192, 192, 192) solid;
+}
+
+.tableFixHead {
+  overflow: auto;
+  height: 100px;
+}
+
+.tableFixHead thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--fbc-gray-20);
+}

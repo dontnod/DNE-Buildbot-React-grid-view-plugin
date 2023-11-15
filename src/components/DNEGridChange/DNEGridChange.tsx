@@ -99,7 +99,7 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
     <div>
       <span>{change.project}: </span>
       <OverlayTrigger placement="top" overlay={popoverWithText("comments-" + change.id, change.comments)}>
-        <b>{change.revision}</b>
+        <b className="changedetails-revision">{change.revision}</b>
       </OverlayTrigger>
       <span> <ArrowExpander isExpanded={showDetails}/><br/></span>
       <OverlayTrigger

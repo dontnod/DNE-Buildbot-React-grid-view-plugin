@@ -13,3 +13,11 @@
   border: unset;
   background-color: unset
 }
+
+.changedetails-revision {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: clip;
+  max-width: 115px;
+  display:inline-block;
+}

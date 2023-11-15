@@ -369,26 +369,31 @@ export const DNEGridView = observer(() => {
     return {changeid, change};
   };
 
-  // Sort Builds by latest first
-  const sortedBuilds = buildsQuery.getAll().sort((left: Build, right: Build) => right.started_at - left.started_at);
-
-  // Pack builds per-common sequential changes
+  // Pack builds per-common changes
   const buildsPerChange: {changeid: string, change: Change | null, builds: Build[]}[] = [];
-  for (const build of sortedBuilds) {
+  for (const build of buildsQuery.getAll()) {
     const {changeid, change} = changeFromBuild(build);
 
-    const lastChange = buildsPerChange.length > 0 ? buildsPerChange[buildsPerChange.length - 1] : null;
-    if (lastChange?.changeid === changeid) {
-      lastChange.builds.push(build);
+    const foundItem = buildsPerChange.find((item) => item.changeid === changeid);
+    if (foundItem !== undefined) {
+      foundItem.builds.push(build);
     }
     else {
-      if (buildsPerChange.length >= buildFetchLimit) {
-        // Stop at `buildFetchLimit`, we want only this amount of changes
-        break;
-      }
       buildsPerChange.push({changeid, change, builds: [build]});
     }
   }
+  buildsPerChange
+    // Sort by latest change
+    .sort((left, right) => {
+      if (left.change !== null && right.change !== null) {
+        return right.change.when_timestamp - left.change.when_timestamp;
+      }
+      const leftMin = Math.min(...left.builds.map((b: Build) => b.started_at));
+      const rightMin = Math.min(...right.builds.map((b: Build) => b.started_at));
+      return rightMin - leftMin;
+    })
+    // then keep only last X changes
+    .splice(buildFetchLimit);
 
   const body = buildsPerChange.map(({change, builds}) => {
     return (

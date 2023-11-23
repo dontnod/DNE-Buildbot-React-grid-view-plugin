@@ -1,10 +1,12 @@
 .bb-dne-grid-table {
   text-align: center;
   max-width: max-content;
+
+  --dne-grid-gray-20: #ededf0;
 }
 
 .bb-dne-grid-table td {
-  border: 0.5px rgb(192, 192, 192) solid;
+  border: 0.5px var(--dne-grid-gray-20) solid;
 }
 
 .tableFixHead {
@@ -12,9 +14,9 @@
   height: 100px;
 }
 
-.tableFixHead thead th {
+.tableFixHead thead tr {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--fbc-gray-20);
+  background-color: var(--dne-grid-gray-20);
 }

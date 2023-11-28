@@ -22,9 +22,9 @@ import {
   BuildLinkWithSummaryTooltip
 } from "buildbot-ui";
 import {buildbotGetSettings} from "buildbot-plugin-support";
-import {DNEViewSelectManager} from "./Utils";
-import {getConfig, DNEConfig, DNEView} from "../../Config";
-import {getRelatedOfFilteredDataMultiCollection} from "./DataMultiCollectionUtils";
+import {DNEViewSelectManager} from "../../utils/SelectManagers";
+import {getConfig, DNEConfig, DNEView} from "../../utils/Config";
+import {getRelatedOfFilteredDataMultiCollection} from "../../utils/DataMultiCollectionUtils";
 import {useState} from "react";
 import {DNEGridChange} from "../../components/DNEGridChange/DNEGridChange";
 

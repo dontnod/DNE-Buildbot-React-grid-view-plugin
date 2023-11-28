@@ -66,7 +66,7 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
             <td>
               <ArrowExpander isExpanded={showProps} setIsExpanded={setShowProps}/>
               { showProps
-                ? <pre className="changedetails-properties">{JSON.stringify(change.properties)}</pre>
+                ? <pre className="dne-changedetails-properties">{JSON.stringify(change.properties)}</pre>
                 : <></>
               }
             </td>
@@ -99,7 +99,7 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
     <div>
       <span>{change.project}: </span>
       <OverlayTrigger placement="top" overlay={popoverWithText("comments-" + change.id, change.comments)}>
-        <b className="changedetails-revision">{change.revision}</b>
+        <b className="dne-changedetails-revision">{change.revision}</b>
       </OverlayTrigger>
       <span> <ArrowExpander isExpanded={showDetails}/><br/></span>
       <OverlayTrigger
@@ -116,8 +116,8 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
   );
 
   return (
-    <div className="changedetails">
-      <div className="changedetails-heading" onClick={() => setShowDetails(!showDetails)}>
+    <div className="dne-changedetails">
+      <div className="dne-changedetails-heading" onClick={() => setShowDetails(!showDetails)}>
         {content}
       </div>
       {showDetails ? renderChangeDetails() : <></>}

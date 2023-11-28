@@ -97,7 +97,6 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
 
   const content = (
     <div>
-      <span>{change.project}: </span>
       <OverlayTrigger placement="top" overlay={popoverWithText("comments-" + change.id, change.comments)}>
         <b className="dne-changedetails-revision">{change.revision}</b>
       </OverlayTrigger>
@@ -110,8 +109,6 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
       </OverlayTrigger>
       <br/>
       <ChangeUserAvatar name={changeAuthorName} email={changeEmail} showName={false}/>
-      <br/>
-      in <b>{change.branch}</b>
     </div>
   );
 

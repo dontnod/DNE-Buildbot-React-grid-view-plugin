@@ -23,7 +23,7 @@ import {
 } from "buildbot-ui";
 import {buildbotGetSettings} from "buildbot-plugin-support";
 import {DNEViewSelectManager} from "./Utils";
-import {getConfig, DNEConfig, DNEView} from "./Config";
+import {getConfig, DNEConfig, DNEView} from "../../Config";
 import {getRelatedOfFilteredDataMultiCollection} from "./DataMultiCollectionUtils";
 import {useState} from "react";
 import {DNEGridChange} from "../../components/DNEGridChange/DNEGridChange";

@@ -30,9 +30,9 @@ import { useState } from "react";
 import {DNEGridChange} from "../../components/DNEGridChange/DNEGridChange";
 
 
-function getViewSelectForm(config: DNEConfig) {
+function getViewSelectForm(config: DNEConfig, defaultFetchLimit: number) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const viewSelectManager = new DNEViewSelectManager(config, searchParams, setSearchParams);
+  const viewSelectManager = new DNEViewSelectManager(config, defaultFetchLimit, searchParams, setSearchParams);
 
   const projectViews = viewSelectManager.getBranchOrDefault()?.views ?? [];
 
@@ -64,7 +64,7 @@ function getViewSelectForm(config: DNEConfig) {
 
   const viewTag = viewSelectManager.getViewTag();
 
-  return {form: selectForms, viewTag: viewTag};
+  return {form: selectForms, viewTag: viewTag, length: viewSelectManager.getLength()};
 }
 
 function getGotRevisionFromBuild(build: Build) {
@@ -296,8 +296,8 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 export const DNEGridView = observer(() => {
   const config: DNEConfig = getConfig();
   const settings = buildbotGetSettings();
-  const buildFetchLimit = settings.getIntegerSetting("DNEGrid.buildFetchLimit");
-  const {form: viewSelectForm, viewTag} = getViewSelectForm(config);
+  const buildFetchLimitSetting = settings.getIntegerSetting("DNEGrid.buildFetchLimit");
+  const {form: viewSelectForm, viewTag, length: buildFetchLimit} = getViewSelectForm(config, buildFetchLimitSetting);
   const {
     queriesResolved,
     builders,

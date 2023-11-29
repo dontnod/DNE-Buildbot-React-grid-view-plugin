@@ -2007,16 +2007,16 @@ buffer-from@^1.0.0:
   integrity sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==
 
 "buildbot-data-js@link:../react-data-module":
-  version "4.0.0"
+  version "0.0.0"
+  uid ""
 
 "buildbot-plugin-support@link:../plugin_support":
-  version "1.0.0"
+  version "0.0.0"
+  uid ""
 
 "buildbot-ui@link:../react-ui":
-  version "0.1.0"
-  dependencies:
-    buildbot-data-js "link:../react-data-module"
-    react-icons "^4.8.0"
+  version "0.0.0"
+  uid ""
 
 cache-base@^1.0.1:
   version "1.0.1"
@@ -4317,6 +4317,11 @@ react-lifecycles-compat@^3.0.4:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
+
+react-multi-select-component@^4.3.4:
+  version "4.3.4"
+  resolved "https://registry.yarnpkg.com/react-multi-select-component/-/react-multi-select-component-4.3.4.tgz#4f4b354bfa1f0353fa9c3bccf8178c87c9780450"
+  integrity sha512-Ui/bzCbROF4WfKq3OKWyQJHmy/bd1mW7CQM+L83TfiltuVvHElhKEyPM3JzO9urIcWplBUKv+kyxqmEnd9jPcA==
 
 react-overlays@^5.1.2:
   version "5.2.1"

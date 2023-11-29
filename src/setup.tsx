@@ -1,6 +1,7 @@
 import {FaCubes} from "react-icons/fa";
 import {buildbotSetupPlugin, RegistrationCallbacks} from "buildbot-plugin-support";
 import {DNEGridView} from './views/GridView/DNEGridView';
+import {DNEFailureDashboard} from './views/FailureDashboard/DNEFailureDashboard';
 
 buildbotSetupPlugin((reg: RegistrationCallbacks) => {
   reg.registerMenuGroup({
@@ -16,6 +17,21 @@ buildbotSetupPlugin((reg: RegistrationCallbacks) => {
     route: "/dne_grid",
     group: "dne_grid",
     element: () => <DNEGridView/>,
+  });
+
+  reg.registerMenuGroup({
+    name: 'dne_fdash',
+    caption: 'DNE Failure Dashboard',
+    icon: <FaCubes/>,
+    order: 4,
+    route: '/failure_dash',
+    parentName: null,
+  });
+
+  reg.registerRoute({
+    route: "/failure_dash",
+    group: "dne_fdash",
+    element: () => <DNEFailureDashboard/>,
   });
 
   reg.registerSettingGroup({

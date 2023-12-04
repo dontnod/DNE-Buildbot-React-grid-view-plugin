@@ -1,5 +1,5 @@
 import {URLSearchParamsInit} from "react-router-dom";
-import {DNEBranch, DNEConfig, DNEProject, DNEView} from "../../Config";
+import {DNEBranch, DNEConfig, DNEProject, DNEView} from "./Config";
 
 export class DNEViewSelectManager {
     config: DNEConfig;

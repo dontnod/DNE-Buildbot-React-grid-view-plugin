@@ -1,33 +1,25 @@
 import {URLSearchParamsInit} from "react-router-dom";
 import {DNEBranch, DNEConfig, DNEProject, DNEView} from "./Config";
 
-export class DNEViewSelectManager {
+export class DNEProjectBranchSelectManager {
     config: DNEConfig;
-    lengthDefault: number;
     searchParams: URLSearchParams;
     setSearchParams: (nextInit: URLSearchParamsInit) => void;
 
     projectParamName: string = 'project';
     branchParamName: string = 'branch';
-    viewParamName: string = 'view';
-    lengthParamName: string = 'length';
 
     constructor(
         config: DNEConfig,
-        lengthDefault: number,
         searchParams: URLSearchParams,
         setSearchParams: (nextInit: URLSearchParamsInit) => void
     ) {
         this.config = config;
-        this.lengthDefault = lengthDefault;
         this.searchParams = searchParams;
         this.setSearchParams = setSearchParams;
 
         this.setProjectId(this.getProjectOrDefault()?.identifier);
         this.setBranch(this.getBranchOrDefault()?.identifier);
-        this.setView(this.getViewOrDefault()?.identifier);
-
-        this.setValue(this.lengthParamName, this.getLength().toString());
     }
 
     getProjectId(): string {
@@ -62,6 +54,46 @@ export class DNEViewSelectManager {
         this.setValue(this.branchParamName, branch);
     }
 
+    getTag() {
+        return `${this.getProjectId()}-${this.getBranchId()}`.toLowerCase();
+    }
+
+    protected setValue(key: string, value: string | undefined) {
+        if (value !== undefined && this.searchParams.get(key) != value) {
+            const newParams = new URLSearchParams([...this.searchParams.entries()]);
+            newParams.set(key, value);
+            this.setSearchParams(newParams);
+            this.searchParams = newParams;
+        }
+        else if (value === undefined && this.searchParams.has(key)) {
+            const newParams = new URLSearchParams([...this.searchParams.entries()]);
+            newParams.delete(key);
+            this.setSearchParams(newParams);
+            this.searchParams = newParams;
+        }
+    }
+}
+
+export class DNEViewSelectManager extends DNEProjectBranchSelectManager {
+    lengthDefault: number;
+
+    viewParamName: string = 'view';
+    lengthParamName: string = 'length';
+
+    constructor(
+        config: DNEConfig,
+        lengthDefault: number,
+        searchParams: URLSearchParams,
+        setSearchParams: (nextInit: URLSearchParamsInit) => void
+    ) {
+        super(config, searchParams, setSearchParams);
+
+        this.lengthDefault = lengthDefault;
+
+        this.setView(this.getViewOrDefault()?.identifier);
+        this.setValue(this.lengthParamName, this.getLength().toString());
+    }
+
     getViewId(): string {
         return this.searchParams.get(this.viewParamName)!;
     }
@@ -92,21 +124,6 @@ export class DNEViewSelectManager {
     }
 
     getViewTag() {
-        return `${this.getProjectId()}-${this.getBranchId()}-${this.getViewId()}`.toLowerCase();
-    }
-
-    private setValue(key: string, value: string | undefined) {
-        if (value !== undefined && this.searchParams.get(key) != value) {
-            const newParams = new URLSearchParams([...this.searchParams.entries()]);
-            newParams.set(key, value);
-            this.setSearchParams(newParams);
-            this.searchParams = newParams;
-        }
-        else if (value === undefined && this.searchParams.has(key)) {
-            const newParams = new URLSearchParams([...this.searchParams.entries()]);
-            newParams.delete(key);
-            this.setSearchParams(newParams);
-            this.searchParams = newParams;
-        }
+        return `${super.getTag()}-${this.getViewId()}`.toLowerCase();
     }
 }

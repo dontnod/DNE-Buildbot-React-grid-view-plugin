@@ -1,27 +1,34 @@
 import {URLSearchParamsInit} from "react-router-dom";
 import {DNEBranch, DNEConfig, DNEProject, DNEView} from "./Config";
+import { max } from "moment";
 
 export class DNEViewSelectManager {
     config: DNEConfig;
+    lengthDefault: number;
     searchParams: URLSearchParams;
     setSearchParams: (nextInit: URLSearchParamsInit) => void;
 
     projectParamName: string = 'project';
     branchParamName: string = 'branch';
     viewParamName: string = 'view';
+    lengthParamName: string = 'length';
 
     constructor(
         config: DNEConfig,
+        lengthDefault: number,
         searchParams: URLSearchParams,
         setSearchParams: (nextInit: URLSearchParamsInit) => void
     ) {
         this.config = config;
+        this.lengthDefault = lengthDefault;
         this.searchParams = searchParams;
         this.setSearchParams = setSearchParams;
 
         this.setProjectId(this.getProjectOrDefault()?.identifier);
         this.setBranch(this.getBranchOrDefault()?.identifier);
         this.setView(this.getViewOrDefault()?.identifier);
+
+        this.setValue(this.lengthParamName, this.getLength().toString());
     }
 
     getProjectId(): string {
@@ -72,6 +79,17 @@ export class DNEViewSelectManager {
 
     setView(view: string | undefined) {
         this.setValue(this.viewParamName, view);
+    }
+
+    getLength(): number {
+        if (!this.searchParams.has(this.lengthParamName)) {
+            return this.lengthDefault;
+        }
+        const parsedLength = parseInt(this.searchParams.get(this.lengthParamName)!);
+        if (Number.isNaN(parsedLength)) {
+            return this.lengthDefault;
+        }
+        return Math.max(parsedLength, 1);
     }
 
     getViewTag() {

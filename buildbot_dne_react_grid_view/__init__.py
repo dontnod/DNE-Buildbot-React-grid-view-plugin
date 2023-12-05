@@ -13,7 +13,7 @@
 #
 # Copyright Buildbot Team Members
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from buildbot.www.plugin import Application
 
 # create the interface for the setuptools entry point
@@ -31,14 +31,14 @@ class DNEView:
 class DNEBranch:
     identifier: str
     display_name: str
-    views: list[DNEView]
+    views: list[DNEView] = field(default_factory=list)
 
 @dataclass
 class DNEProject:
     identifier: str
     display_name: str
-    branches: list[DNEBranch]
+    branches: list[DNEBranch] = field(default_factory=list)
 
 @dataclass
 class DNEConfig:
-    projects: list[DNEProject]
+    projects: list[DNEProject] = field(default_factory=list)

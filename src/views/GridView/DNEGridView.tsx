@@ -3,7 +3,6 @@ import './DNEGridView.scss';
 import {ObservableMap, observable} from "mobx";
 import {observer, useLocalObservable} from "mobx-react";
 import {Link, useSearchParams} from "react-router-dom";
-import {FaCubes} from "react-icons/fa";
 import {Form} from "react-bootstrap";
 import {
   Builder,
@@ -22,11 +21,11 @@ import {
   LoadingIndicator,
   BuildLinkWithSummaryTooltip
 } from "buildbot-ui";
-import {buildbotGetSettings, buildbotSetupPlugin, RegistrationCallbacks} from "buildbot-plugin-support";
-import {DNEViewSelectManager} from "./Utils";
-import {getConfig, DNEConfig, DNEView} from "./Config";
-import {getRelatedOfFilteredDataMultiCollection} from "./DataMultiCollectionUtils";
-import { useState } from "react";
+import {buildbotGetSettings} from "buildbot-plugin-support";
+import {DNEViewSelectManager} from "../../utils/SelectManagers";
+import {getConfig, DNEConfig, DNEView} from "../../utils/Config";
+import {getRelatedOfFilteredDataMultiCollection} from "../../utils/DataMultiCollectionUtils";
+import {useState} from "react";
 import {DNEGridChange} from "../../components/DNEGridChange/DNEGridChange";
 
 
@@ -426,36 +425,6 @@ export const DNEGridView = observer(() => {
   });
 
   return renderGrid(body);
-});
-
-buildbotSetupPlugin((reg: RegistrationCallbacks) => {
-  reg.registerMenuGroup({
-    name: 'dne_grid',
-    caption: 'DNE Grid View',
-    icon: <FaCubes/>,
-    order: 4,
-    route: '/dne_grid',
-    parentName: null,
-  });
-
-  reg.registerRoute({
-    route: "/dne_grid",
-    group: "dne_grid",
-    element: () => <DNEGridView/>,
-  });
-
-  reg.registerSettingGroup({
-    name: "DNEGrid",
-    caption: "DNEGrid related settings",
-    items: [
-      {
-        type: 'integer',
-        name: 'buildFetchLimit',
-        caption: 'Maximum number of builds to retrieve per builder',
-        defaultValue: 20,
-      }
-    ]
-  });
 });
 
 export default DNEGridView;

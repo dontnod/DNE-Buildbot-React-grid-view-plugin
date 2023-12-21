@@ -23,8 +23,31 @@ export type DNEProject = {
   branches: DNEBranch[],
 };
 
+export type ChangeFilter = {
+  name: string
+  project: string
+  branch: string
+  file_pattern_blacklist: string[]
+  file_pattern_whitelist: string[]
+  skip_tags: string[]
+  user_blacklist: string[]
+  user_whitelist: string[]
+};
+
+export type Scheduler = {
+  name: string,
+  builder_names: string[],
+  change_filter: ChangeFilter | null,
+
+  // Nightly
+  only_if_changed: boolean | null,
+  cron: string | null,
+  force_cron: string | null,
+};
+
 export type DNEConfig = {
   projects: DNEProject[]
+  schedulers: Scheduler[]
 };
 
 export function getConfig(): DNEConfig {

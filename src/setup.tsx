@@ -1,5 +1,6 @@
 import {buildbotSetupPlugin, RegistrationCallbacks, RouteConfig, GroupSettings} from "buildbot-plugin-support";
 import {DNEGridView} from './views/GridView/DNEGridView';
+import {SchedulerDetailsView} from './views/SchedulersDetails/SchedulerDetailsView';
 
 type RouteWithMenuConfig = {
   reg: RegistrationCallbacks,
@@ -42,6 +43,17 @@ buildbotSetupPlugin((reg: RegistrationCallbacks) => {
     element: () => <DNEGridView/>,
     parentName: null,
     group: null,
+  });
+
+  registerRouteWithMenu({
+    reg,
+    name: 'schedulers_details',
+    caption: 'Schedulers Details',
+    order: null,
+    route: '/schedulers/details',
+    element: () => <SchedulerDetailsView/>,
+    parentName: 'builds',
+    group: 'schedulers',
   });
 
   reg.registerSettingGroup({

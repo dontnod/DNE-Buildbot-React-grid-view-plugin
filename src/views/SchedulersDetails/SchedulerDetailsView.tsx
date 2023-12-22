@@ -56,7 +56,7 @@ export const SchedulerDetailsView = observer(() => {
   const schedulerPrefix = `${projectBranchTag}-`;
 
   const relevantSchedulers = config.schedulers.filter((s) =>
-    s.name.startsWith(schedulerPrefix)
+    s.builder_names.some(b => b.includes(schedulerPrefix))
   );
 
   const schedulersWidgets = (

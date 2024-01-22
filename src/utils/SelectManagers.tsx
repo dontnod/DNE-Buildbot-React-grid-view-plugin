@@ -23,7 +23,7 @@ export class DNEProjectBranchSelectManager {
     }
 
     getProjectId(): string {
-        return this.searchParams.get(this.projectParamName)!;
+        return this.getValue(this.projectParamName)!;
     }
 
     getProjectOrDefault(): DNEProject | undefined {
@@ -37,7 +37,7 @@ export class DNEProjectBranchSelectManager {
     }
 
     getBranchId(): string {
-        return this.searchParams.get(this.branchParamName)!;
+        return this.getValue(this.branchParamName)!;
     }
 
     getBranchOrDefault(): DNEBranch | undefined {
@@ -71,6 +71,18 @@ export class DNEProjectBranchSelectManager {
             this.setSearchParams(newParams);
             this.searchParams = newParams;
         }
+
+        const localStorageKey = `dne-${key}`;
+        if (value !== undefined) {
+            localStorage.setItem(localStorageKey, value);
+        }
+        else {
+            localStorage.removeItem(localStorageKey);
+        }
+    }
+
+    protected getValue(key: string): string | null {
+        return this.searchParams.get(key) ?? localStorage.getItem(`dne-${key}`);
     }
 }
 
@@ -95,7 +107,7 @@ export class DNEViewSelectManager extends DNEProjectBranchSelectManager {
     }
 
     getViewId(): string {
-        return this.searchParams.get(this.viewParamName)!;
+        return this.getValue(this.viewParamName)!;
     }
 
     getViewOrDefault(): DNEView | undefined {

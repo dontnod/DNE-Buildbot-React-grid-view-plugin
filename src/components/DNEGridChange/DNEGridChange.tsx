@@ -13,6 +13,44 @@ type ChangeDetailsProps = {
   setShowDetails: (show: boolean) => void;
 }
 
+type ChangeDetailsPropsNotFound = {
+  changeid: string;
+  timestamp: bigint;
+}
+
+const popoverWithText = (id: string, text: string) => {
+    return (
+      <Popover id={"bb-popover-change-details-" + id}>
+        <Popover.Content>
+          {text}
+        </Popover.Content>
+      </Popover>
+    );
+  }
+
+export const DNEGridChangeNotFound = ({changeid, timestamp}: ChangeDetailsPropsNotFound) => {
+    const now = useCurrentTime();
+    const content = (
+    <>
+      <OverlayTrigger placement="top" overlay={popoverWithText("comments-" + changeid, "No Change Found")}>
+        <b className="dne-changedetails-revision">{changeid}</b>
+      </OverlayTrigger>
+      <OverlayTrigger
+        placement="top"
+        overlay={popoverWithText("date-" + changeid, dateFormat(timestamp))}
+      >
+        <span><br/>{durationFromNowFormat(timestamp, now)}</span>
+      </OverlayTrigger>
+    </>
+    );
+
+    return (
+    <div className="dne-changedetails">
+        {content}
+    </div>
+    );
+}
+
 export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetailsProps) => {
   const now = useCurrentTime();
   const [showProps, setShowProps] = useState(false);
@@ -84,16 +122,6 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
   );
 
   const [changeAuthorName, changeEmail] = parseChangeAuthorNameAndEmail(change.author);
-
-  const popoverWithText = (id: string, text: string) => {
-    return (
-      <Popover id={"bb-popover-change-details-" + id}>
-        <Popover.Content>
-          {text}
-        </Popover.Content>
-      </Popover>
-    );
-  }
 
   const content = (
     <>

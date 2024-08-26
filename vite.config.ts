@@ -1,7 +1,6 @@
 import {resolve} from "path";
 import {defineConfig} from "vite";
 import react from "@vitejs/plugin-react";
-import { ModuleFormat } from "rollup";
 
 const outDir = 'buildbot_dne_react_grid_view/static';
 
@@ -29,14 +28,14 @@ export default defineConfig({
       external: [
         'axios',
         'buildbot-data-js',
+        'buildbot-plugin-support',
         'buildbot-ui',
         'mobx',
         'mobx-react',
         'moment',
         'react',
         'react-dom',
-        'react-router-dom',
-        'buildbot-plugin-support',
+        'react-router-dom'
       ],
       output: {
         assetFileNames: 'styles.css',
@@ -55,8 +54,11 @@ export default defineConfig({
         },
       },
     },
-    target: ['es2015'],
+    target: ['es2020'],
     outDir: outDir,
     emptyOutDir: true,
+  },
+  test: {
+    environment: "jsdom"
   },
 });

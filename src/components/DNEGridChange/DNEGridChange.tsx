@@ -1,11 +1,34 @@
 
 import './DNEGridChange.scss';
 import {useState} from "react";
+import {observer} from "mobx-react";
 import {OverlayTrigger, Popover, Table} from "react-bootstrap";
-import {Change, parseChangeAuthorNameAndEmail} from "buildbot-data-js";
-import {dateFormat, durationFromNowFormat, useCurrentTime} from "buildbot-ui";
+import {Change, parseChangeAuthorNameAndEmail, useDataAccessor, useDataApiQuery} from "buildbot-data-js";
+import {dateFormat, durationFromNowFormat, LoadingIndicator, useCurrentTime} from "buildbot-ui";
 import {ArrowExpander} from "buildbot-ui";
 import {ChangeUserAvatar} from "buildbot-ui";
+
+type ChangeFilesProps = {
+  changeid: number;
+}
+
+const ChangeFiles = observer(({changeid}: ChangeFilesProps) => {
+  const accessor = useDataAccessor([changeid]);
+
+  const changeQuery = useDataApiQuery(() => {
+    return Change.getAll(accessor, {id: changeid.toString(), subscribe: false, query: {field: ['files']}});
+  });
+
+  if (!changeQuery.isResolved()) {
+    return <LoadingIndicator />
+  }
+
+  const change = changeQuery.getNthOrNull(0);
+  if (change === null || change.files.length === 0) {
+    return <p>No files</p>;
+  }
+  return <ul>{change.files.map(file => (<li key={file}>{file}</li>))}</ul>;
+});
 
 type ChangeDetailsProps = {
   change: Change;
@@ -16,6 +39,7 @@ type ChangeDetailsProps = {
 export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetailsProps) => {
   const now = useCurrentTime();
   const [showProps, setShowProps] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
 
   const renderChangeDetails = () => (
     <div className="anim-changedetails">
@@ -76,10 +100,8 @@ export const DNEGridChange = ({change, showDetails, setShowDetails}: ChangeDetai
       <h5>Comment</h5>
       <pre>{change.comments}</pre>
       <h5>Changed files</h5>
-      {change.files.length === 0
-        ? <p>No files</p>
-        : <ul>{change.files.map(file => (<li key={file}>{file}</li>))}</ul>
-      }
+      <ArrowExpander isExpanded={showFiles} setIsExpanded={setShowFiles}/>
+      {showFiles ? <ChangeFiles changeid={change.changeid} /> : <></>}
     </div>
   );
 

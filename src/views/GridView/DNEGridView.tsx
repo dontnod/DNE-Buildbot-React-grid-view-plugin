@@ -143,6 +143,24 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
 
   const [buildChangeMap, setBuildChangeMap] = useState<Map<string, Change>>(new Map<string, Change>());
 
+  const changeFields = [
+    'changeid',
+    'author',
+    'branch',
+    'category',
+    'codebase',
+    'comments',
+    // 'files',
+    'parent_changeids',
+    'project',
+    'properties',
+    'repository',
+    'revision',
+    'revlink',
+    'sourcestamp',
+    'when_timestamp',
+  ];
+
   const changesQuery = useDataApiDynamicQuery(
     buildsQueryState,
     () => {
@@ -167,7 +185,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
         // Will get revision from lighter method /api/v2/changes?revision={rev}
         observable(filteredBuilds),
         (b: Build) => {
-          return b.getChanges({query: {limit: 1, order: '-changeid'}, subscribe: false});
+          return b.getChanges({query: {limit: 1, order: '-changeid', field: changeFields}, subscribe: false});
         },
       );
     }
@@ -243,7 +261,7 @@ function getDatas(viewTag: string, buildFetchLimit: number) {
           observable(filteredBuilds),
           (build: Build) => {
             const gotRevision = getGotRevisionFromBuild(build)!;
-            return Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: gotRevision}, subscribe: false});
+            return Change.getAll(accessor, {query: {limit: 1, order: '-changeid', revision: gotRevision, field: changeFields}, subscribe: false});
           }
         );
       },

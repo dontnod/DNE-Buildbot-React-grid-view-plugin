@@ -13,7 +13,11 @@
 #
 # Copyright Buildbot Team Members
 
-from dataclasses import dataclass, field
+from __future__ import annotations
+
+from dataclasses import dataclass
+from dataclasses import field
+
 from buildbot.www.plugin import Application
 
 # create the interface for the setuptools entry point
@@ -27,17 +31,20 @@ class DNEView:
     display_group: str
     display_name: str
 
+
 @dataclass
 class DNEBranch:
     identifier: str
     display_name: str
     views: list[DNEView] = field(default_factory=list)
 
+
 @dataclass
 class DNEProject:
     identifier: str
     display_name: str
     branches: list[DNEBranch] = field(default_factory=list)
+
 
 @dataclass
 class ChangeFilter:
@@ -50,6 +57,7 @@ class ChangeFilter:
     user_blacklist: list[str] = field(default_factory=list)
     user_whitelist: list[str] = field(default_factory=list)
 
+
 @dataclass
 class Scheduler:
     name: str
@@ -61,6 +69,7 @@ class Scheduler:
     # Should be populated with Nightly scheduler `_times_to_cron_line`
     cron: str | None = None
     force_cron: str | None = None
+
 
 @dataclass
 class DNEConfig:

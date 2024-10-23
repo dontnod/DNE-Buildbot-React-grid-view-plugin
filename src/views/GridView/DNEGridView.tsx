@@ -98,13 +98,13 @@ function resolvedDataMultiCollection<ParentDataType extends BaseClass, DataType 
   return new DataMultiCollection<ParentDataType, DataType>(accessor, observable([]), null, null, () => resolvedDataCollection<DataType>());
 }
 
-function getDatas(viewTag: string, buildFetchLimit: number) {
+function getDatas(viewTag: string, buildFetchLimit: number, show_old_builders: boolean) {
   const accessor = useDataAccessor([]);
 
   const buildersQuery = useDataApiQuery(() => Builder.getAll(accessor, {query: {order: 'name'}}));
   const builders: Builder[] = buildersQuery
     .array
-    .filter((b: Builder) => b.tags.indexOf(viewTag) >= 0);
+    .filter((b: Builder) => b.tags.indexOf(viewTag) >= 0 && (show_old_builders || b.masterids.length > 0));
 
   const builderIds = observable(builders.map((b: Builder) => b.id));
 
@@ -314,6 +314,7 @@ export const DNEGridView = observer(() => {
   const config: DNEConfig = getConfig();
   const settings = buildbotGetSettings();
   const buildFetchLimitSetting = settings.getIntegerSetting("DNEGrid.buildFetchLimit");
+  const showOldBuilders = buildbotGetSettings().getBooleanSetting("Builders.show_old_builders");
   const {form: viewSelectForm, viewTag, length: buildFetchLimit} = getViewSelectForm(config, buildFetchLimitSetting);
   const {
     queriesResolved,
@@ -322,7 +323,7 @@ export const DNEGridView = observer(() => {
     buildsQuery,
     buildChangeMap,
     revisionChangeMap,
-  } = getDatas(viewTag, buildFetchLimit);
+  } = getDatas(viewTag, buildFetchLimit, showOldBuilders);
 
   const changeIsExpandedByChangeId = useLocalObservable(() => new ObservableMap<number, boolean>());
 

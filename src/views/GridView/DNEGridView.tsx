@@ -3,7 +3,7 @@ import './DNEGridView.scss';
 import {ObservableMap, observable} from "mobx";
 import {observer, useLocalObservable} from "mobx-react";
 import {Link, useSearchParams} from "react-router-dom";
-import {Form} from "react-bootstrap";
+import {Form, OverlayTrigger, Popover} from "react-bootstrap";
 import {
   Builder,
   Build,
@@ -18,6 +18,7 @@ import {
   Buildrequest,
 } from "buildbot-data-js";
 import {
+  dateFormat,
   LoadingIndicator,
   BuildLinkWithSummaryTooltip
 } from "buildbot-ui";
@@ -27,6 +28,7 @@ import {getConfig, DNEConfig, DNEView} from "../../utils/Config";
 import {getRelatedOfFilteredDataMultiCollection} from "../../utils/DataMultiCollectionUtils";
 import {useState} from "react";
 import {DNEGridChange} from "../../components/DNEGridChange/DNEGridChange";
+import {DNEGridChangeNotFound} from "../../components/DNEGridChange/DNEGridChange";
 
 
 function getViewSelectForm(config: DNEConfig, defaultFetchLimit: number) {
@@ -413,17 +415,20 @@ export const DNEGridView = observer(() => {
     // then keep only last X changes
     .splice(buildFetchLimit);
 
-  const body = buildsPerChange.map(({change, builds}) => {
+  const body = buildsPerChange.map(({changeid, change, builds}) => {
     return (
     <tr>
       <td>
         {
-          change
+          change // The change has been properly polled, pull from the polled change info
           ? <DNEGridChange change={change}
               showDetails={changeIsExpandedByChangeId.get(change.changeid) ?? false}
               setShowDetails={(show: boolean) => changeIsExpandedByChangeId.set(change.changeid, show)}
             />
-          : "ChangeNotFound"
+          : changeid.length !=0 && builds.length != 0  // The change wasn't polled, pull what we can from earliest build
+                  ? <DNEGridChangeNotFound changeid={changeid}
+                                           timestamp={builds[0].started_at}/>
+                  : "ChangeNotFound"  // Last resort, we just don't what this change is
         }
       </td>
       {
